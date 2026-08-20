@@ -1,122 +1,154 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Layout } from './components/layout/Layout';
+import { ProtectedRoute } from './components/layout/ProtectedRoute';
 
-function App() {
-  const [count, setCount] = useState(0)
+// auth pages
+import { Login } from './pages/auth/Login';
+import { Register } from './pages/auth/Register';
 
+// admin
+import { UserManagement } from './pages/admin/UserManagement';
+
+// dashboard
+import { Dashboard } from './pages/Dashboard';
+
+// inventory
+import { Products } from './pages/inventory/Products';
+import { LowStock } from './pages/inventory/LowStock';
+
+// procurement
+import { Vendors } from './pages/procurement/Vendors';
+import { PurchaseOrders } from './pages/procurement/PurchaseOrders';
+
+// sales
+import { Customers } from './pages/sales/Customers';
+import { Orders } from './pages/sales/Orders';
+
+// finance
+import { FinanceSummary } from './pages/finance/FinanceSummary';
+import { Ledger } from './pages/finance/Ledger';
+import { Budgets } from './pages/finance/Budgets';
+
+// gis
+import { MapView } from './pages/gis/MapView';
+
+// misc
+import { Unauthorized } from './pages/Unauthorized';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 30000,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
+const ALL_ROLES = [
+  'ADMIN','INV_MANAGER','INV_EMPLOYEE',
+  'PROC_MANAGER','PROC_EMPLOYEE',
+  'SALES_MANAGER','SALES_EMPLOYEE',
+  'FIN_MANAGER','FIN_EMPLOYEE',
+];
+
+export default function App() {
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <Routes>
+          {/* public */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/unauthorized" element={<Unauthorized />} />
 
-      <div className="ticks"></div>
+          {/* protected */}
+          <Route path="/" element={
+            <ProtectedRoute roles={ALL_ROLES}>
+              <Layout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<Navigate to="/dashboard" replace />} />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+            <Route path="dashboard" element={
+              <ProtectedRoute roles={ALL_ROLES}>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+            {/* admin */}
+            <Route path="admin/users" element={
+              <ProtectedRoute roles={['ADMIN']}>
+                <UserManagement />
+              </ProtectedRoute>
+            } />
+
+            {/* inventory */}
+            <Route path="inventory/products" element={
+              <ProtectedRoute roles={['ADMIN','INV_MANAGER','INV_EMPLOYEE']}>
+                <Products />
+              </ProtectedRoute>
+            } />
+            <Route path="inventory/low-stock" element={
+              <ProtectedRoute roles={['ADMIN','INV_MANAGER']}>
+                <LowStock />
+              </ProtectedRoute>
+            } />
+
+            {/* procurement */}
+            <Route path="procurement/vendors" element={
+              <ProtectedRoute roles={['ADMIN','PROC_MANAGER','PROC_EMPLOYEE']}>
+                <Vendors />
+              </ProtectedRoute>
+            } />
+            <Route path="procurement/orders" element={
+              <ProtectedRoute roles={['ADMIN','PROC_MANAGER','PROC_EMPLOYEE']}>
+                <PurchaseOrders />
+              </ProtectedRoute>
+            } />
+
+            {/* sales */}
+            <Route path="sales/customers" element={
+              <ProtectedRoute roles={['ADMIN','SALES_MANAGER','SALES_EMPLOYEE']}>
+                <Customers />
+              </ProtectedRoute>
+            } />
+            <Route path="sales/orders" element={
+              <ProtectedRoute roles={['ADMIN','SALES_MANAGER','SALES_EMPLOYEE']}>
+                <Orders />
+              </ProtectedRoute>
+            } />
+
+            {/* finance */}
+            <Route path="finance/summary" element={
+              <ProtectedRoute roles={['ADMIN','FIN_MANAGER','FIN_EMPLOYEE']}>
+                <FinanceSummary />
+              </ProtectedRoute>
+            } />
+            <Route path="finance/ledger" element={
+              <ProtectedRoute roles={['ADMIN','FIN_MANAGER','FIN_EMPLOYEE']}>
+                <Ledger />
+              </ProtectedRoute>
+            } />
+            <Route path="finance/budgets" element={
+              <ProtectedRoute roles={['ADMIN','FIN_MANAGER']}>
+                <Budgets />
+              </ProtectedRoute>
+            } />
+
+            {/* gis */}
+            <Route path="gis/map" element={
+              <ProtectedRoute roles={['ADMIN','INV_MANAGER','PROC_MANAGER','SALES_MANAGER']}>
+                <MapView />
+              </ProtectedRoute>
+            } />
+          </Route>
+
+          {/* fallback */}
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </QueryClientProvider>
+  );
 }
-
-export default App
