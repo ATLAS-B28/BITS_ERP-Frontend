@@ -1,6 +1,13 @@
 import {NavLink, useNavigate} from 'react-router-dom'
 import {useAuth} from '../../hooks/useAuth'
 
+const ALL_ROLES = [
+    'ADMIN','INV_MANAGER','INV_EMPLOYEE',
+    'PROC_MANAGER','PROC_EMPLOYEE',
+    'SALES_MANAGER','SALES_EMPLOYEE',
+    'FIN_MANAGER','FIN_EMPLOYEE',
+];
+
 const navItems = [
     {
         section: 'Main',
