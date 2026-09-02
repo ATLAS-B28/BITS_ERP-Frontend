@@ -36,6 +36,9 @@ import { MapView } from './pages/gis/MapView';
 // misc
 import { Unauthorized } from './pages/Unauthorized';
 
+import { ForecastDashboard } from './pages/ai/ForecastDashboard';
+import { ERPChatbot } from './pages/ai/ERPChatbot';
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -144,6 +147,17 @@ export default function App() {
               </ProtectedRoute>
             } />
           </Route>
+
+          <Route path="ai/forecast" element={
+  <ProtectedRoute roles={['ADMIN','FIN_MANAGER','INV_MANAGER']}>
+    <ForecastDashboard />
+  </ProtectedRoute>
+} />
+<Route path="ai/chat" element={
+  <ProtectedRoute roles={ALL_ROLES}>
+    <ERPChatbot />
+  </ProtectedRoute>
+} />
 
           {/* fallback */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

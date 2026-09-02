@@ -13,7 +13,12 @@ export default defineConfig({
       '/oauth2': {
         target: 'http://localhost:8080',
         changeOrigin: true,
-      }
+      },
+      '/ai': {
+  target: 'http://localhost:8001',
+  changeOrigin: true,
+  rewrite: (path) => path.replace(/^\/ai/, ''),
+},
     }
   }
 })

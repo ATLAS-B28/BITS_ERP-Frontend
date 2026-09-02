@@ -81,7 +81,9 @@ export function PurchaseOrders() {
       qc.invalidateQueries({ queryKey: ['po-orders'] });
       setShowDetail(false);
     },
-    onError: (err) => setError(getErrorMessage(err)),
+    onError: (err) => setError(
+      console.log('ACTION ERROR:', err.response?.status, err.response?.data),
+      getErrorMessage(err)),
   });
 
   const resetForm = () => {
@@ -177,13 +179,16 @@ export function PurchaseOrders() {
           </Button>
         )}
       </div>
-
+{error && (
+  <Alert type="error" message={error} onClose={() => setError('')} />
+)}
       <Card padding={false}>
         <div className="p-6">
           <Table columns={columns} data={orders}
             loading={isLoading} emptyText="No purchase orders yet" />
         </div>
       </Card>
+      
 
       {/* Create PO Modal */}
       <Modal

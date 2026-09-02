@@ -171,6 +171,35 @@ const navItems = [
       },
     ],
   },
+  {
+  section: 'AI',
+  items: [
+    {
+      path: '/ai/forecast',
+      label: 'Forecasting',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+
+            d="M11 17a2 2 0 114 0v1a2 2 0 11-4 0v-1zm6-4a2 2 0 114 0v1a2 2 0 11-4 0v-1zm-12-4a2 2 0 114 0v5a2 2 0 11-4 0V9zm6-6a2 2 0 114 0v9a2 2 0 11-4 0V3z"/>
+        </svg>
+      ),
+      roles: ['ADMIN','FIN_MANAGER','INV_MANAGER'],
+    },
+    {
+      path: '/ai/chat',
+      label: 'ERP Assistant',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+
+            d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+        </svg>
+      ),
+      roles: ALL_ROLES,
+    },
+  ],
+},
 ]
 
 export function Sidebar({collapsed, onCollapse}) {

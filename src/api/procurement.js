@@ -29,14 +29,14 @@ export const procurementApi = {
         api.get(`/procurement/orders/status/${status}`),
 
     submitOrder: (orderId) =>
-        api.post(`/procurement/orders/${orderId}/submit`),
+        api.patch(`/procurement/orders/${orderId}/submit`),
 
     approvedOrders: (orderId) =>
-        api.get(`/procurement/orders/${orderId}/approve`),
+        api.patch(`/procurement/orders/${orderId}/approve`),
 
     rejectOrder: (orderId) =>
-        api.post(`/procurement/orders/${orderId}/reject`),
+        api.patch(`/procurement/orders/${orderId}/reject`),
 
     receiveOrder: (orderId) =>
-        api.post(`/procurement/orders/${orderId}/receive`),
+        api.patch(`/procurement/orders/${orderId}/receive`),
 }
