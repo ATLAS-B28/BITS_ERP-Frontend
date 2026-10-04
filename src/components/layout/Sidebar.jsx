@@ -176,6 +176,18 @@ const navItems = [
         ),
         roles: ['ADMIN','INV_MANAGER','PROC_MANAGER','SALES_MANAGER'],
       },
+      {
+        path: '/gis/warehouse',
+        label: 'Warehouse Plan',
+        icon: (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+          </svg>
+        ),
+        roles: ['ADMIN','INV_MANAGER','INV_EMPLOYEE'],
+      },
     ],
   },
   {
@@ -252,10 +264,11 @@ export function Sidebar({collapsed, onCollapse}) {
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-4 px-2">
         {navItems.map((section) => {
-          const accessible = section.items.filter(i => canAccess(i.roles));
+          if (!section || !Array.isArray(section.items)) return null;
+          const accessible = section.items.filter(i => i && canAccess(i.roles));
           if (accessible.length === 0) return null;
           return (
-            <div key={section.section} className="mb-4">
+            <div key={section.section || section.path} className="mb-4">
               {!collapsed && (
                 <p className="text-xs font-semibold text-gray-500 uppercase
                   tracking-wider px-3 mb-1">

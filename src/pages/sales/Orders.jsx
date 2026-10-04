@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { salesApi } from '../../api/sales';
 import { inventoryApi } from '../../api/inventory';
@@ -41,6 +41,28 @@ export function Orders() {
     queryKey: ['customers'],
     queryFn: () => salesApi.getCustomers(),
   });
+
+  // fetch single customer details when a customer is selected
+  const { data: customerDetailData } = useQuery({
+    queryKey: ['customer-detail', form.customerId],
+    queryFn: () => salesApi.getCustomer(form.customerId),
+    enabled: !!form.customerId,
+  });
+
+  // auto-fill delivery address and coordinates when selected customer changes
+  useEffect(() => {
+    if (customerDetailData?.data?.data) {
+      const customer = customerDetailData.data.data;
+      if (customer.latitude && customer.longitude) {
+        setForm(p => ({
+          ...p,
+          deliveryLatitude: customer.latitude,
+          deliveryLongitude: customer.longitude,
+          deliveryAddress: customer.address || p.deliveryAddress,
+        }));
+      }
+    }
+  }, [customerDetailData]);
 
   const { data: productData } = useQuery({
     queryKey: ['products'],
@@ -107,6 +129,14 @@ export function Orders() {
     ),
   }));
 
+  const sanitizeItems = (items = []) => items
+    .filter(item => item && item.productId !== '' && item.quantity !== '' && item.unitPrice !== '')
+    .map(item => ({
+      productId: item.productId,
+      quantity: Number(item.quantity),
+      unitPrice: Number(item.unitPrice),
+    }));
+
   const orders = data?.data?.data || [];
 
   const columns = [
@@ -157,9 +187,9 @@ export function Orders() {
             </Button>
             {actions.map(a => (
               <Button key={a.action} size="sm" variant={a.variant}
-                loading={actionMutation.isPending}
                 onClick={() => actionMutation.mutate({
-                  id: row.id, action: a.action,
+                  id: row.id,
+                  action: a.action,
                 })}>
                 {a.label}
               </Button>
@@ -205,19 +235,28 @@ export function Orders() {
             </Button>
             <Button
               loading={createMutation.isPending}
-              onClick={() => createMutation.mutate({
-                customerId: form.customerId,
-                deliveryAddress: form.deliveryAddress,
-                deliveryLatitude: form.deliveryLatitude
-                  ? parseFloat(form.deliveryLatitude) : null,
-                deliveryLongitude: form.deliveryLongitude
-                  ? parseFloat(form.deliveryLongitude) : null,
-                items: form.items.map(i => ({
-                  productId: i.productId,
-                  quantity: parseInt(i.quantity),
-                  unitPrice: parseFloat(i.unitPrice),
-                })),
-              })}
+              onClick={() => {
+                const validItems = sanitizeItems(form.items);
+
+                if (!form.customerId) {
+                  setError('Please select a customer');
+                  return;
+                }
+                if (validItems.length === 0) {
+                  setError('Please add at least one complete item');
+                  return;
+                }
+
+                createMutation.mutate({
+                  customerId: form.customerId,
+                  deliveryAddress: form.deliveryAddress,
+                  deliveryLatitude: form.deliveryLatitude
+                    ? parseFloat(form.deliveryLatitude) : null,
+                  deliveryLongitude: form.deliveryLongitude
+                    ? parseFloat(form.deliveryLongitude) : null,
+                  items: validItems,
+                });
+              }}
             >
               Create Order
             </Button>
@@ -226,27 +265,47 @@ export function Orders() {
       >
         <div className="flex flex-col gap-4">
           {error && <Alert type="error" message={error} />}
-          <Select label="Customer" name="customerId"
-            value={form.customerId} required
-            onChange={e => setForm(p =>
-              ({ ...p, customerId: e.target.value }))}
+          <Select
+            label="Customer"
+            name="customerId"
+            value={form.customerId}
+            required
+            onChange={e => {
+              const customerId = e.target.value;
+              setForm(p => ({ ...p, customerId }));
+              // find customer coords from the loaded list
+              const customer = (customerData?.data?.data || [])
+                .find(c => c.id === customerId);
+              if (customer?.latitude && customer?.longitude) {
+                setForm(p => ({
+                  ...p,
+                  customerId,
+                  deliveryLatitude: customer.latitude,
+                  deliveryLongitude: customer.longitude,
+                  deliveryAddress: customer.address || p.deliveryAddress,
+                }));
+              }
+            }}
             options={customers}
-            placeholder="Select customer..." />
+            placeholder="Select customer..."
+          />
           <Input label="Delivery Address" name="deliveryAddress"
             value={form.deliveryAddress}
             onChange={e => setForm(p =>
               ({ ...p, deliveryAddress: e.target.value }))} />
-          <div className="grid grid-cols-2 gap-3">
-            <Input label="Delivery Latitude" type="number"
-              value={form.deliveryLatitude}
-              onChange={e => setForm(p =>
-                ({ ...p, deliveryLatitude: e.target.value }))}
-              placeholder="18.5204" />
-            <Input label="Delivery Longitude" type="number"
-              value={form.deliveryLongitude}
-              onChange={e => setForm(p =>
-                ({ ...p, deliveryLongitude: e.target.value }))}
-              placeholder="73.8567" />
+          <div className="p-3 bg-gray-50 rounded-lg text-sm">
+            <p className="text-xs text-gray-500 mb-1">
+              Delivery coordinates (from customer location)
+            </p>
+            {form.deliveryLatitude && form.deliveryLongitude ? (
+              <p className="text-green-600 font-medium">
+                ✓ {form.deliveryLatitude.toFixed(4)}, {form.deliveryLongitude.toFixed(4)}
+              </p>
+            ) : (
+              <p className="text-gray-400 italic">
+                Select a customer with a saved location
+              </p>
+            )}
           </div>
 
           <div>

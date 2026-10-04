@@ -20,7 +20,7 @@ export const salesApi = {
         api.post('/sales/orders', data),
 
     getOrdersByStatus: (status) =>
-        api.get(`/sales/orders/status/${status}`),
+        api.get('/sales/orders', { params: { status } }),
 
     confirmOrder: (orderId) =>
         api.patch(`/sales/orders/${orderId}/confirm`),
@@ -33,4 +33,6 @@ export const salesApi = {
 
     cancelOrder: (orderId) =>
         api.patch(`/sales/orders/${orderId}/cancel`),
+    getDispatchedForMap: () =>
+        api.get('/sales/orders-dispatched-map'),
 }

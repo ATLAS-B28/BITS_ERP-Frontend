@@ -10,6 +10,7 @@ import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { Alert } from '../../components/ui/Alert';
+import { LocationPickerModal } from '../../components/ui/LocationPickerModal';
 import { getErrorMessage } from '../../utils/helpers';
 
 export function Vendors() {
@@ -19,14 +20,19 @@ export function Vendors() {
 
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState(null);
   const [error, setError] = useState('');
+  const [fetchError, setFetchError] = useState('');
   const [form, setForm] = useState({
     name: '', contactEmail: '', contactPhone: '', locationId: '',
   });
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ['vendors'],
     queryFn: () => procurementApi.getVendors(),
+    retry: false,
+    onError: (err) => setFetchError(getErrorMessage(err)),
   });
 
   const { data: locData } = useQuery({
@@ -67,16 +73,36 @@ export function Vendors() {
       name: vendor.name,
       contactEmail: vendor.contactEmail || '',
       contactPhone: vendor.contactPhone || '',
-      locationId: '',
+      locationId: vendor.locationId || '',
     });
     setError('');
     setShowModal(true);
+
+    // prefill selectedLocation if possible from loaded locations
+    try {
+      const loaded = (locData?.data?.data || []);
+      const found = loaded.find(l => String(l.id) === String(vendor.locationId));
+      if (found) {
+        setSelectedLocation(found);
+        return;
+      }
+
+      // otherwise fetch the single location from API
+      if (vendor.locationId) {
+        gisApi.getLocationById(vendor.locationId)
+          .then(res => setSelectedLocation(res.data.data))
+          .catch(() => {});
+      }
+    } catch (e) {
+      // ignore
+    }
   };
 
   const closeModal = () => {
     setShowModal(false);
     setEditing(null);
     setError('');
+    setSelectedLocation(null);
   };
 
   const vendors = data?.data?.data || [];
@@ -134,6 +160,18 @@ export function Vendors() {
 
       <Card padding={false}>
         <div className="p-6">
+          {fetchError && (
+            <div className="mb-4 flex items-center justify-between gap-4">
+              <div className="flex-1">
+                <Alert type="error" message={fetchError} />
+              </div>
+              <div>
+                <Button onClick={() => { setFetchError(''); refetch(); }}>
+                  Retry
+                </Button>
+              </div>
+            </div>
+          )}
           <Table columns={columns} data={vendors}
             loading={isLoading} emptyText="No vendors yet" />
         </div>
@@ -148,10 +186,23 @@ export function Vendors() {
             <Button variant="secondary" onClick={closeModal}>Cancel</Button>
             <Button
               loading={createMutation.isPending}
-              onClick={() => createMutation.mutate({
-                ...form,
-                locationId: form.locationId ? parseInt(form.locationId) : null,
-              })}
+              onClick={() => {
+                // validate selected location has coords when present
+                const chosenId = selectedLocation?.id ?? (form.locationId ? parseInt(form.locationId) : null);
+                if (chosenId) {
+                  // prefer selectedLocation object, otherwise lookup
+                  const locObj = selectedLocation || (locData?.data?.data || []).find(l => String(l.id) === String(chosenId));
+                  if (!locObj || !locObj.latitude || !locObj.longitude) {
+                    setError('Selected location has no coordinates. Please add coordinates or choose a different location.');
+                    return;
+                  }
+                }
+
+                createMutation.mutate({
+                  ...form,
+                  locationId: chosenId,
+                });
+              }}
             >
               {editing ? 'Update' : 'Create'} Vendor
             </Button>
@@ -171,14 +222,42 @@ export function Vendors() {
             value={form.contactPhone}
             onChange={e => setForm(p =>
               ({ ...p, contactPhone: e.target.value }))} />
-          <Select label="Location" name="locationId"
-            value={form.locationId}
-            onChange={e => setForm(p =>
-              ({ ...p, locationId: e.target.value }))}
-            options={locations}
-            placeholder="Select location..." />
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-gray-700">Location</label>
+            <div className="flex gap-2">
+              <div className="flex-1 px-3 py-2 border border-gray-300 rounded-lg
+                text-sm bg-gray-50 min-h-[38px] flex items-center">
+                {selectedLocation ? (
+                  <span className="text-gray-800">
+                    {selectedLocation.name} — {selectedLocation.city}
+                    {selectedLocation.latitude && (
+                      <span className="text-green-600 ml-2 text-xs">✓ coords</span>
+                    )}
+                  </span>
+                ) : (
+                  <span className="text-gray-400">No location selected</span>
+                )}
+              </div>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setShowLocationPicker(true)}
+              >
+                {selectedLocation ? 'Change' : 'Select'}
+              </Button>
+            </div>
+          </div>
         </div>
       </Modal>
+      <LocationPickerModal
+        isOpen={showLocationPicker}
+        onClose={() => setShowLocationPicker(false)}
+        defaultType="vendor_site"
+        onSelect={(loc) => {
+          setSelectedLocation(loc);
+          setShowLocationPicker(false);
+        }}
+      />
     </div>
   );
 }

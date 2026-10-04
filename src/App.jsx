@@ -55,6 +55,8 @@ const ALL_ROLES = [
   'SALES_MANAGER','SALES_EMPLOYEE',
   'FIN_MANAGER','FIN_EMPLOYEE',
 ];
+import { WarehouseFloorPlan } from './pages/gis/WarehouseFloorPlan';
+
 
 export default function App() {
   return (
@@ -146,18 +148,25 @@ export default function App() {
                 <MapView />
               </ProtectedRoute>
             } />
-          </Route>
 
-          <Route path="ai/forecast" element={
-  <ProtectedRoute roles={['ADMIN','FIN_MANAGER','INV_MANAGER']}>
-    <ForecastDashboard />
-  </ProtectedRoute>
-} />
-<Route path="ai/chat" element={
-  <ProtectedRoute roles={ALL_ROLES}>
-    <ERPChatbot />
-  </ProtectedRoute>
-} />
+            {/* AI */}
+            <Route path="ai/forecast" element={
+              <ProtectedRoute roles={['ADMIN','FIN_MANAGER','INV_MANAGER']}>
+                <ForecastDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="ai/chat" element={
+              <ProtectedRoute roles={ALL_ROLES}>
+                <ERPChatbot />
+              </ProtectedRoute>
+            } />
+
+            <Route path="gis/warehouse" element={
+              <ProtectedRoute roles={['ADMIN','INV_MANAGER','INV_EMPLOYEE']}>
+                <WarehouseFloorPlan />
+              </ProtectedRoute>
+            } />
+          </Route>
 
           {/* fallback */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

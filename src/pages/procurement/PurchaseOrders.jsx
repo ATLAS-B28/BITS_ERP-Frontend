@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { procurementApi } from '../../api/procurement';
 import { inventoryApi } from '../../api/inventory';
@@ -31,6 +31,8 @@ export function PurchaseOrders() {
 
   const [form, setForm] = useState({
     vendorId: '',
+    vendorLatitude: '',
+    vendorLongitude: '',
     items: [{ productId: '', quantity: '', unitPrice: '' }],
   });
 
@@ -48,6 +50,23 @@ export function PurchaseOrders() {
     queryKey: ['products'],
     queryFn: () => inventoryApi.getProducts(),
   });
+
+  const { data: vendorDetailData } = useQuery({
+    queryKey: ['vendor-detail', form.vendorId],
+    queryFn: () => procurementApi.getVendor(form.vendorId),
+    enabled: !!form.vendorId,
+  });
+
+  useEffect(() => {
+    if (vendorDetailData?.data?.data) {
+      const vendor = vendorDetailData.data.data;
+      setForm(p => ({
+        ...p,
+        vendorLatitude: vendor.latitude,
+        vendorLongitude: vendor.longitude,
+      }));
+    }
+  }, [vendorDetailData]);
 
   const vendors = (vendorData?.data?.data || []).map(v => ({
     value: v.id, label: v.name,
@@ -71,11 +90,17 @@ export function PurchaseOrders() {
     mutationFn: ({ id, action }) => {
       const map = {
         submit: procurementApi.submitOrder,
-        approve: procurementApi.approveOrder,
+        approve: procurementApi.approveOrder || procurementApi.approvedOrders,
         reject: procurementApi.rejectOrder,
         receive: procurementApi.receiveOrder,
       };
-      return map[action](id);
+
+      const handler = map[action];
+      if (!handler) {
+        throw new Error(`Unsupported purchase order action: ${action}`);
+      }
+
+      return handler(id);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['po-orders'] });
@@ -89,6 +114,8 @@ export function PurchaseOrders() {
   const resetForm = () => {
     setForm({
       vendorId: '',
+      vendorLatitude: '',
+      vendorLongitude: '',
       items: [{ productId: '', quantity: '', unitPrice: '' }],
     });
     setError('');
@@ -110,6 +137,14 @@ export function PurchaseOrders() {
       idx === i ? { ...item, [field]: value } : item
     ),
   }));
+
+  const sanitizeItems = (items = []) => items
+    .filter(item => item && item.productId !== '' && item.quantity !== '' && item.unitPrice !== '')
+    .map(item => ({
+      productId: item.productId,
+      quantity: Number(item.quantity),
+      unitPrice: Number(item.unitPrice),
+    }));
 
   const orders = data?.data?.data || [];
 
@@ -204,14 +239,27 @@ export function PurchaseOrders() {
             </Button>
             <Button
               loading={createMutation.isPending}
-              onClick={() => createMutation.mutate({
-                vendorId: form.vendorId,
-                items: form.items.map(i => ({
-                  productId: i.productId,
-                  quantity: parseInt(i.quantity),
-                  unitPrice: parseFloat(i.unitPrice),
-                })),
-              })}
+              onClick={() => {
+                const validItems = sanitizeItems(form.items);
+
+                if (!form.vendorId) {
+                  setError('Please select a vendor');
+                  return;
+                }
+                if (validItems.length === 0) {
+                  setError('Please add at least one complete item');
+                  return;
+                }
+
+                createMutation.mutate({
+                  vendorId: form.vendorId,
+                  vendorLatitude: form.vendorLatitude
+                    ? parseFloat(form.vendorLatitude) : null,
+                  vendorLongitude: form.vendorLongitude
+                    ? parseFloat(form.vendorLongitude) : null,
+                  items: validItems,
+                });
+              }}
             >
               Create PO
             </Button>

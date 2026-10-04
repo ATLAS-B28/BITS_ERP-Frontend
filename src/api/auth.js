@@ -4,8 +4,8 @@ export const authApi = {
     login: (email, password) => 
         api.post('/auth/login', {email, password}),
 
-    register: (email, password) =>
-        api.post('/auth/register', {email, password}),
+    register: (name, email, password) =>
+        api.post('/auth/register', {name, email, password}),
 
     refreshToken: (refreshToken) =>
         api.post('/auth/refresh', {refreshToken}),
@@ -21,6 +21,9 @@ export const authApi = {
 
     getAllUsers: () => 
         api.get('/auth/admin/users'),
+
+    updateUser: (userId, data) =>
+        api.patch(`/auth/admin/users/${userId}`, data),
 
     createUser: (email, password) =>
         api.post('/auth/admin/users', {email, password})

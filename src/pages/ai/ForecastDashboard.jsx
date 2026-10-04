@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { NavLink } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { forecastApi } from '../../api/ai';
 import { Card, CardHeader } from '../../components/ui/Card';
@@ -38,28 +39,63 @@ export function ForecastDashboard() {
     queryFn: () => forecastApi.getDemandForecast(null, demandPeriods),
   });
 
-  const revForecast = revData?.data;
-  const analytics = analyticsData?.data;
-  const demand = demandData?.data;
+  const normalizePayload = (payload) => {
+    if (!payload) return {};
+    if (Array.isArray(payload)) return payload;
+    if (payload.data && typeof payload.data === 'object' && !Array.isArray(payload.data)) {
+      return payload.data;
+    }
+    if (payload.result && typeof payload.result === 'object') return payload.result;
+    return payload;
+  };
 
-  // merge historical + forecast for revenue chart
+  const asArray = (value) => Array.isArray(value) ? value : [];
+
+  const revForecast = normalizePayload(revData?.data);
+  const analytics = normalizePayload(analyticsData?.data);
+  const demand = normalizePayload(demandData?.data);
+
+  const demandSeries = asArray(demand?.forecast || demand?.data || demand?.series);
+
   const revChartData = [
-    ...(revForecast?.historical || []).map(h => ({
-      date: h.date,
-      actual: parseFloat(h.actual || 0),
+    ...asArray(revForecast?.historical).map(h => ({
+      date: h.date ?? h.ds ?? h.timestamp ?? h.day,
+      actual: parseFloat(h.actual ?? h.revenue ?? h.value ?? 0),
       type: 'historical',
     })),
-    ...(revForecast?.forecast || []).map(f => ({
-      date: f.ds,
-      forecast: parseFloat(f.yhat || 0),
-      upper: parseFloat(f.yhat_upper || 0),
-      lower: parseFloat(f.yhat_lower || 0),
+    ...asArray(revForecast?.forecast).map(f => ({
+      date: f.ds ?? f.date ?? f.timestamp ?? f.day,
+      forecast: parseFloat(f.yhat ?? f.forecast ?? f.value ?? f.amount ?? 0),
+      upper: parseFloat(f.yhat_upper ?? f.upper ?? f.upper_bound ?? 0),
+      lower: parseFloat(f.yhat_lower ?? f.lower ?? f.lower_bound ?? 0),
       type: 'forecast',
     })),
   ];
 
+  const normalizedDemandData = demandSeries.map(item => ({
+    ds: item.ds ?? item.date ?? item.timestamp ?? item.day,
+    yhat: parseFloat(item.yhat ?? item.forecast ?? item.value ?? item.amount ?? 0),
+    yhat_upper: parseFloat(item.yhat_upper ?? item.upper ?? item.upper_bound ?? 0),
+    yhat_lower: parseFloat(item.yhat_lower ?? item.lower ?? item.lower_bound ?? 0),
+  }));
+
   return (
     <div className="flex flex-col gap-6">
+      <nav className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white p-1 shadow-sm">
+        <NavLink
+          to="/ai/forecast"
+          className={({ isActive }) => `rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}
+        >
+          Forecasting
+        </NavLink>
+        <NavLink
+          to="/ai/chat"
+          className={({ isActive }) => `rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}
+        >
+          ERP Assistant
+        </NavLink>
+      </nav>
+
       <div>
         <h1 className="text-2xl font-bold text-gray-900">
           AI Forecasting
@@ -235,7 +271,7 @@ export function ForecastDashboard() {
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={240}>
-            <LineChart data={demand?.forecast || []}>
+            <LineChart data={normalizedDemandData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="ds" tick={{ fontSize: 10 }}
                 interval="preserveStartEnd" />

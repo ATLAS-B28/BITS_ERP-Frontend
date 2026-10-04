@@ -14,5 +14,11 @@ export const inventoryApi = {
         api.post(`/inventory/products/${productId}/stock`, data),
 
     getLowStockProducts: () =>
-        api.get('/inventory/low-stock')
+        api.get('/inventory/low-stock'),
+
+    getByLocation: (locationId) =>
+        api.get(`/inventory/by-location/${locationId}`),
+
+    getStockSummaryByLocation: () =>
+        api.get('/inventory/summary-by-location'),
 }

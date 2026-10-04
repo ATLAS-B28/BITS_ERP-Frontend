@@ -7,6 +7,10 @@ export const procurementApi = {
     getVendorById: (vendorId) => 
         api.get(`/procurement/vendors/${vendorId}`),
 
+    // backward-compatible alias used across the codebase
+    getVendor: (vendorId) =>
+        api.get(`/procurement/vendors/${vendorId}`),
+
     createVendor: (data) =>
         api.post('/procurement/vendors', data),
 
@@ -25,11 +29,18 @@ export const procurementApi = {
     createOrder: (data) =>
         api.post('/procurement/orders', data),
 
+    // dispatched orders for map
+    getDispatchedForMap: () =>
+        api.get('/procurement/orders-dispatched-map'),
+
     getOrdersByStatus: (status) =>
         api.get(`/procurement/orders/status/${status}`),
 
     submitOrder: (orderId) =>
         api.patch(`/procurement/orders/${orderId}/submit`),
+
+    approveOrder: (orderId) =>
+        api.patch(`/procurement/orders/${orderId}/approve`),
 
     approvedOrders: (orderId) =>
         api.patch(`/procurement/orders/${orderId}/approve`),

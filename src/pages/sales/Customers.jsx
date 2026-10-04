@@ -8,7 +8,7 @@ import { Table } from '../../components/ui/Table';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
-import { Select } from '../../components/ui/Select';
+import { LocationPickerModal } from '../../components/ui/LocationPickerModal';
 import { Alert } from '../../components/ui/Alert';
 import { getErrorMessage } from '../../utils/helpers';
 
@@ -17,8 +17,10 @@ export function Customers() {
   const qc = useQueryClient();
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState('');
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState(null);
   const [form, setForm] = useState({
-    name: '', email: '', phone: '', locationId: '',
+    name: '', email: '', phone: '',
   });
 
   const { data, isLoading } = useQuery({
@@ -40,7 +42,8 @@ export function Customers() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['customers'] });
       setShowModal(false);
-      setForm({ name:'', email:'', phone:'', locationId:'' });
+      setForm({ name:'', email:'', phone:'' });
+      setSelectedLocation(null);
     },
     onError: (err) => setError(getErrorMessage(err)),
   });
@@ -89,8 +92,7 @@ export function Customers() {
               loading={createMutation.isPending}
               onClick={() => createMutation.mutate({
                 ...form,
-                locationId: form.locationId
-                  ? parseInt(form.locationId) : null,
+                locationId: selectedLocation?.id || null,
               })}
             >
               Add Customer
@@ -110,14 +112,53 @@ export function Customers() {
           <Input label="Phone" name="phone" value={form.phone}
             onChange={e => setForm(p =>
               ({ ...p, phone: e.target.value }))} />
-          <Select label="Location" name="locationId"
-            value={form.locationId}
-            onChange={e => setForm(p =>
-              ({ ...p, locationId: e.target.value }))}
-            options={locations}
-            placeholder="Select location..." />
+
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-gray-700">
+              Location
+            </label>
+            <div className="flex gap-2">
+              <div className="flex-1 px-3 py-2 border border-gray-300
+                rounded-lg text-sm bg-gray-50 min-h-[38px] flex items-center">
+                {selectedLocation ? (
+                  <div>
+                    <span className="text-gray-800 font-medium">
+                      {selectedLocation.name}
+                    </span>
+                    <span className="text-gray-500 ml-2">
+                      — {selectedLocation.city}
+                    </span>
+                    {selectedLocation.latitude && (
+                      <span className="text-green-600 ml-2 text-xs">
+                        ✓ coords saved
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-gray-400">No location selected</span>
+                )}
+              </div>
+              <Button size="sm" variant="secondary"
+                onClick={() => setShowLocationPicker(true)}>
+                {selectedLocation ? 'Change' : 'Select'}
+              </Button>
+            </div>
+            <p className="text-xs text-gray-400">
+              Location coords auto-fill delivery address on orders
+            </p>
+          </div>
         </div>
       </Modal>
+      {/* location picker modal */}
+      <LocationPickerModal
+        isOpen={showLocationPicker}
+        onClose={() => setShowLocationPicker(false)}
+        defaultType="customer_site"
+        onSelect={(loc) => {
+          setSelectedLocation(loc);
+          setShowLocationPicker(false);
+        }}
+      />
     </div>
   );
 }

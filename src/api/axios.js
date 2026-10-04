@@ -11,6 +11,11 @@ const api = axios.create({
 api.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('accessToken')
+        // debug: log token presence and request info
+        try {
+            // avoid logging the full token in prod; this is temporary for debugging
+            console.log('API request:', config.method, config.url, !!token)
+        } catch (e) {}
         if(token) {
             config.headers.Authorization = `Bearer ${token}`
         }
@@ -23,6 +28,10 @@ api.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config
+        // debug: log response error details
+        try {
+            console.error('API response error:', error.response?.status, error.response?.data)
+        } catch (e) {}
 
         if(error.response?.status == 401 && !originalRequest._retry) {
             originalRequest._retry = true

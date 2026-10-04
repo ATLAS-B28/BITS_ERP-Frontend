@@ -7,6 +7,9 @@ export const gisApi = {
     getLocationById: (id) =>
         api.get(`/gis/locations/${id}`),
 
+    getEnrichedLocations: () =>
+  api.get('/gis/locations/enriched'),
+
     createLocation: (data) =>
         api.post('/gis/locations', data),
 

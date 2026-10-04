@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { NavLink } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { chatApi } from '../../api/ai';
 import { Button } from '../../components/ui/Button';
@@ -102,6 +103,27 @@ export function ERPChatbot() {
 
   return (
     <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between gap-4">
+        <nav className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white p-1 shadow-sm">
+          <NavLink
+            to="/ai/forecast"
+            className={({ isActive }) => `rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}
+          >
+            Forecasting
+          </NavLink>
+          <NavLink
+            to="/ai/chat"
+            className={({ isActive }) => `rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}
+          >
+            ERP Assistant
+          </NavLink>
+        </nav>
+
+        <Button variant="secondary" size="sm" onClick={clearChat}>
+          Clear Chat
+        </Button>
+      </div>
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">ERP Assistant</h1>
@@ -109,9 +131,6 @@ export function ERPChatbot() {
             Powered by Llama 3.1 via Groq — asks your live ERP data
           </p>
         </div>
-        <Button variant="secondary" size="sm" onClick={clearChat}>
-          Clear Chat
-        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
