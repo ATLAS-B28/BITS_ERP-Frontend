@@ -10,13 +10,24 @@ export const forecastApi = {
   getRevenueForecast: (periods = 30) =>
     aiApi.get(`/forecast/revenue?periods=${periods}`),
 
+  getRevenueForecastEnhanced: (periods = 30) =>
+    aiApi.get(`/forecast/revenue-enhanced?periods=${periods}`),
+
   getDemandForecast: (product = null, periods = 30) =>
     aiApi.get(`/forecast/demand?periods=${periods}${
       product ? `&product=${product}` : ''
     }`),
 
+  getDemandForecastEnhanced: (product = null, periods = 30) =>
+    aiApi.get(`/forecast/demand-enhanced?periods=${periods}${
+      product ? `&product=${product}` : ''
+    }`),
+
   getInventoryAnalytics: () =>
     aiApi.get('/forecast/inventory-analytics'),
+
+  getInventoryProjection: () =>
+    aiApi.get('/forecast/inventory-projection'),
 };
 
 export const chatApi = {

@@ -15,6 +15,7 @@ import { getErrorMessage } from '../../utils/helpers';
 export function Customers() {
   const { role } = useAuth();
   const qc = useQueryClient();
+  const canManage = ['ADMIN','SALES_MANAGER'].includes(role);
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState('');
   const [showLocationPicker, setShowLocationPicker] = useState(false);
@@ -48,6 +49,14 @@ export function Customers() {
     onError: (err) => setError(getErrorMessage(err)),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (customerId) => salesApi.deleteCustomer(customerId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['customers'] });
+    },
+    onError: (err) => setError(getErrorMessage(err)),
+  });
+
   const customers = data?.data?.data || [];
 
   const columns = [
@@ -55,6 +64,22 @@ export function Customers() {
     { key: 'email', label: 'Email' },
     { key: 'phone', label: 'Phone' },
     { key: 'city', label: 'City' },
+    ...(canManage ? [{
+      key: 'actions',
+      label: '',
+      render: (row) => (
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="danger"
+            loading={deleteMutation.isPending && deleteMutation.variables === row.id}
+            onClick={() => deleteMutation.mutate(row.id)}
+          >
+            Delete
+          </Button>
+        </div>
+      ),
+    }] : []),
   ];
 
   return (
@@ -66,9 +91,11 @@ export function Customers() {
             {customers.length} registered customers
           </p>
         </div>
-        <Button onClick={() => { setShowModal(true); setError(''); }}>
-          + Add Customer
-        </Button>
+        {canManage && (
+          <Button onClick={() => { setShowModal(true); setError(''); }}>
+            + Add Customer
+          </Button>
+        )}
       </div>
 
       <Card padding={false}>

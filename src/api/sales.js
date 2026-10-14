@@ -10,6 +10,9 @@ export const salesApi = {
     createCustomer: (data) =>
         api.post('/sales/customers', data),
 
+    deleteCustomer: (customerId) =>
+        api.delete(`/sales/customer/${customerId}`),
+
     getOrders: () =>
         api.get('/sales/orders'),
 
@@ -31,8 +34,8 @@ export const salesApi = {
     deliverOrder: (orderId) =>
         api.patch(`/sales/orders/${orderId}/deliver`),
 
-    cancelOrder: (orderId) =>
-        api.patch(`/sales/orders/${orderId}/cancel`),
+    cancelOrder: (orderId, reason) =>
+        api.patch(`/sales/orders/${orderId}/cancel`, reason ? { reason } : {}),
     getDispatchedForMap: () =>
-        api.get('/sales/orders-dispatched-map'),
+        api.get('/sales/orders-dispatched'),
 }

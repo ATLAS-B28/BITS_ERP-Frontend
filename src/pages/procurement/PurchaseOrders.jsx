@@ -12,6 +12,7 @@ import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { Badge } from '../../components/ui/Badge';
 import { Alert } from '../../components/ui/Alert';
+import { ReasonModal } from '../../components/ui/ReasonModal';
 import { formatCurrency, formatDate, getErrorMessage }
   from '../../utils/helpers';
 
@@ -26,7 +27,9 @@ export function PurchaseOrders() {
 
   const [showCreate, setShowCreate] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
+  const [showReasonModal, setShowReasonModal] = useState(false);
   const [selectedPO, setSelectedPO] = useState(null);
+  const [reasonAction, setReasonAction] = useState(null);
   const [error, setError] = useState('');
 
   const [form, setForm] = useState({
@@ -87,7 +90,7 @@ export function PurchaseOrders() {
   });
 
   const actionMutation = useMutation({
-    mutationFn: ({ id, action }) => {
+    mutationFn: ({ id, action, reason }) => {
       const map = {
         submit: procurementApi.submitOrder,
         approve: procurementApi.approveOrder || procurementApi.approvedOrders,
@@ -100,11 +103,13 @@ export function PurchaseOrders() {
         throw new Error(`Unsupported purchase order action: ${action}`);
       }
 
-      return handler(id);
+      return handler(id, reason);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['po-orders'] });
       setShowDetail(false);
+      setShowReasonModal(false);
+      setReasonAction(null);
     },
     onError: (err) => setError(
       console.log('ACTION ERROR:', err.response?.status, err.response?.data),
@@ -185,9 +190,18 @@ export function PurchaseOrders() {
             {actions.map(a => (
               <Button key={a.action} size="sm" variant={a.variant}
                 loading={actionMutation.isPending}
-                onClick={() => actionMutation.mutate({
-                  id: row.id, action: a.action
-                })}>
+                onClick={() => {
+                  if (a.action === 'reject') {
+                    setReasonAction({ id: row.id, action: a.action });
+                    setShowReasonModal(true);
+                    return;
+                  }
+
+                  actionMutation.mutate({
+                    id: row.id,
+                    action: a.action,
+                  });
+                }}>
                 {a.label}
               </Button>
             ))}
@@ -223,7 +237,27 @@ export function PurchaseOrders() {
             loading={isLoading} emptyText="No purchase orders yet" />
         </div>
       </Card>
-      
+
+      <ReasonModal
+        isOpen={showReasonModal}
+        onClose={() => {
+          setShowReasonModal(false);
+          setReasonAction(null);
+        }}
+        title="Reason for Rejection"
+        loading={actionMutation.isPending}
+        onConfirm={(reason) => {
+          if (!reasonAction) return;
+
+          actionMutation.mutate({
+            id: reasonAction.id,
+            action: reasonAction.action,
+            reason,
+          });
+          setShowReasonModal(false);
+          setReasonAction(null);
+        }}
+      />
 
       {/* Create PO Modal */}
       <Modal

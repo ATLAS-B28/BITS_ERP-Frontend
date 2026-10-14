@@ -121,6 +121,7 @@ export function MapView() {
     queryFn: dispatchedQueryFn,
     refetchInterval: 30000,
     retry: false,
+    throwOnError: false,
     onError: (err) => setDispatchedFetchError(getErrorMessage(err)),
   });
 
@@ -145,9 +146,9 @@ export function MapView() {
     }
   };
 
-  const locations = locData?.data?.data || [];
-  const stockSummary = stockData?.data?.data || [];
-  const dispatchedOrders = dispatchedData?.data?.data || [];
+  const locations = locData?.data?.data ?? [];
+  const stockSummary = stockData?.data?.data ?? [];
+  const dispatchedOrders = dispatchedData?.data?.data ?? [];
   const displayLocations = nearbyResults || locations;
 
   // animated truck positions: keyed by order.id -> { lat, lng }

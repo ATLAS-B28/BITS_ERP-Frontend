@@ -45,8 +45,8 @@ export const procurementApi = {
     approvedOrders: (orderId) =>
         api.patch(`/procurement/orders/${orderId}/approve`),
 
-    rejectOrder: (orderId) =>
-        api.patch(`/procurement/orders/${orderId}/reject`),
+    rejectOrder: (orderId, reason) =>
+        api.patch(`/procurement/orders/${orderId}/reject`, reason ? { reason } : {}),
 
     receiveOrder: (orderId) =>
         api.patch(`/procurement/orders/${orderId}/receive`),

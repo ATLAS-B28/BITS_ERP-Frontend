@@ -75,6 +75,15 @@ export function Vendors() {
       contactPhone: vendor.contactPhone || '',
       locationId: vendor.locationId || '',
     });
+    setSelectedLocation(
+    vendor.city ? {
+      id: null,
+      name: vendor.city,
+      city: vendor.city,
+      latitude: vendor.lat,
+      longitude: vendor.lng,
+    } : null
+  );
     setError('');
     setShowModal(true);
 

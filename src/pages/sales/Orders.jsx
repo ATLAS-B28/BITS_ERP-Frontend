@@ -12,6 +12,7 @@ import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { Badge } from '../../components/ui/Badge';
 import { Alert } from '../../components/ui/Alert';
+import { ReasonModal } from '../../components/ui/ReasonModal';
 import { formatCurrency, formatDate, getErrorMessage }
   from '../../utils/helpers';
 
@@ -21,7 +22,9 @@ export function Orders() {
 
   const [showCreate, setShowCreate] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
+  const [showReasonModal, setShowReasonModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [reasonAction, setReasonAction] = useState(null);
   const [error, setError] = useState('');
 
   const [form, setForm] = useState({
@@ -88,18 +91,20 @@ export function Orders() {
   });
 
   const actionMutation = useMutation({
-    mutationFn: ({ id, action }) => {
+    mutationFn: ({ id, action, reason }) => {
       const map = {
         confirm: salesApi.confirmOrder,
         dispatch: salesApi.dispatchOrder,
         deliver: salesApi.deliverOrder,
         cancel: salesApi.cancelOrder,
       };
-      return map[action](id);
+      return map[action](id, reason);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['sales-orders'] });
       setShowDetail(false);
+      setShowReasonModal(false);
+      setReasonAction(null);
     },
     onError: (err) => setError(getErrorMessage(err)),
   });
@@ -187,10 +192,18 @@ export function Orders() {
             </Button>
             {actions.map(a => (
               <Button key={a.action} size="sm" variant={a.variant}
-                onClick={() => actionMutation.mutate({
-                  id: row.id,
-                  action: a.action,
-                })}>
+                onClick={() => {
+                  if (a.action === 'cancel') {
+                    setReasonAction({ id: row.id, action: a.action });
+                    setShowReasonModal(true);
+                    return;
+                  }
+
+                  actionMutation.mutate({
+                    id: row.id,
+                    action: a.action,
+                  });
+                }}>
                 {a.label}
               </Button>
             ))}
@@ -220,6 +233,27 @@ export function Orders() {
             loading={isLoading} emptyText="No sales orders yet" />
         </div>
       </Card>
+
+      <ReasonModal
+        isOpen={showReasonModal}
+        onClose={() => {
+          setShowReasonModal(false);
+          setReasonAction(null);
+        }}
+        title="Reason for Cancellation"
+        loading={actionMutation.isPending}
+        onConfirm={(reason) => {
+          if (!reasonAction) return;
+
+          actionMutation.mutate({
+            id: reasonAction.id,
+            action: reasonAction.action,
+            reason,
+          });
+          setShowReasonModal(false);
+          setReasonAction(null);
+        }}
+      />
 
       {/* Create Order Modal */}
       <Modal
